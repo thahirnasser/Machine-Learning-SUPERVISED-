@@ -1,0 +1,63 @@
+Var water:FeatureCollection(4 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+ features: List (4 elements)
+
+Var urban:FeatureCollection(11 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+ features: List (11 elements)
+
+Var vegitation:FeatureCollection(4 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+features: List (4 elements)
+
+
+var cloud_free=ee.Algorithms.Landsat.simpleComposite({
+    collection:l8.filterDate("2018-09-10","2019-09-19")
+    
+    
+   
+})
+ 
+ var bands=['B2','B3','B4','B5','B6','B7','B10','B11']
+ 
+ var merged_collection=urban.merge(water).merge(vegitation)
+ print(merged_collection.first())
+ 
+ var training=cloud_free.select(bands).sampleRegions({
+   collection:merged_collection,
+   properties:["landcover"],
+   scale:30
+ });
+ print(training.size());
+ print(training.first());
+ 
+var classifier =ee.Classifier.smileRandomForest(10).train({
+  features:training,
+ classProperty:'landcover',
+  inputProperties:bands,
+   subsampling:1,
+   subsamplingSeed:70
+  
+})
+ 
+// var classiefied=cloud_free.select(bands).classify(classifier)
+var classiefied=cloud_free.classify(classifier)
+ Map.addLayer(classiefied,{min:0,max:3,palette:['grey','green','blue']},'classified image');
+ 
+ Map.addLayer(cloud_free,{bands:['B2','B3','B4'],max:0.4},
+ 'unclassified_image')
+// var training_data=l8.sampleRegions({collection:merged_collection,properties:['landcover'],scale:30});
+// var classifier=ee.Classifier.smileCart()
+// var classifier=classifier.train({features:training_data,classproperty:'landcover',inputproperties:["B2","B3","B4","B5","B6","B7","B10","B11"]})
+// var classified_image=l8.classify(classifier);
+// Map.addLayer(classified_image,{min:0,max:2,palette:['red','green','blue']},'classified image');
+ Map.addLayer(l8,{bands: ['B2','B3','B4']},"landsat");
+print(l8)
+print(l8.size());
+
+var trainAccuracy = classifier.confusionMatrix();
+print('Resubstitution error matrix: ', trainAccuracy);
+print('Training overall accuracy: ', trainAccuracy.accuracy());
