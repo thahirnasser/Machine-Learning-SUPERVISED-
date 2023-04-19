@@ -1,0 +1,76 @@
+Var water:FeatureCollection(4 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+ features: List (4 elements)
+
+Var urban:FeatureCollection(11 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+ features: List (11 elements)
+
+Var vegitation:FeatureCollection(4 elements)
+ type: FeatureCollection
+ columns: Object (2 properties)
+features: List (4 elements)
+
+
+var s1=ee.ImageCollection("NOAA/VIIRS/001/VNP09GA")
+.filterDate('2019-12-10','2020-10-10')
+.sort('CLOUDCOVER')
+.first();
+
+var vizparams={
+  bands:['M1','M2','M3'],
+  min:0,
+  max:3000,
+  gamma:1.4
+};
+Map.addLayer(s1,vizparams,'landsat19-20');
+print(s1);
+
+//create a traing data
+
+var label='class';
+var bands=['I1','I2','I3','M1','M2','M3'];
+var input=s1.select(bands);
+
+var training = vegitation.merge(urban).merge(water);
+print(training)
+
+//overlay the points on image to get trained
+var trainl8=input.sampleRegions({
+  collection:training,
+  properties:[label],
+  scale:30
+  });
+  
+  print(trainl8);
+
+var trainingl8=trainl8.randomColumn();
+var trainset=trainingl8.filter(ee.Filter.lessThan('random',0.8));
+var testset=trainingl8.filter(ee.Filter.greaterThanOrEquals('random',0.8));
+
+
+//classification model
+
+var classifier=ee.Classifier.smileCart().train(trainset,label,bands);
+
+//classify the image
+var classify=input.classify(classifier);
+
+print(classify.getInfo());
+
+//DEFINE PALETTE FOR THE CLASSIFICATION
+
+var landcoverpalette=[
+  'blue',//water(0),
+  'grey',//urban(1),
+  'green',//vegitation(2)
+  ];
+  
+  Map.addLayer(classify,{palette:landcoverpalette,min:0,max:4},'classification');
+
+
+var trainAccuracy = classifier.confusionMatrix();
+print('Resubstitution error matrix: ', trainAccuracy);
+print('Training overall accuracy: ', trainAccuracy.accuracy());
