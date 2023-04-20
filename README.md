@@ -1,4 +1,4 @@
-# Machine-Learning-SUPERVISED-
+# Machine-Learning-SUPERVISED[OUTPUT]
  Machine learning classifier package is for finding the precision or accuracy. Two algorithms are used CART and Random forest. This is to find out which model gives more precise output by distinguishing from water, land, vegetation through collecting satellite band data and formulates into different color and labeling(supervised learning).
 ![cart](https://user-images.githubusercontent.com/90825034/233155960-19117c64-c5f4-45f9-a7ed-38fd21c7e542.png)
 Collecting sample point of water and land as an input data[CART]
